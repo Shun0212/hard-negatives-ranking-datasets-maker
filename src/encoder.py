@@ -1,0 +1,170 @@
+"""ColBERT encoder and retriever using PyLate + fast-plaid."""
+
+import logging
+import os
+from typing import Dict, List, Tuple
+
+import numpy as np
+import torch
+from fast_plaid import search as fp_search
+from pylate import models
+
+logger = logging.getLogger(__name__)
+
+
+def _to_tensors(embeddings: list) -> List[torch.Tensor]:
+    """Convert model encode output to a list of torch.Tensor."""
+    result = []
+    for e in embeddings:
+        if isinstance(e, torch.Tensor):
+            result.append(e.float())
+        elif isinstance(e, np.ndarray):
+            result.append(torch.from_numpy(e).float())
+        else:
+            result.append(torch.tensor(np.array(e), dtype=torch.float32))
+    return result
+
+
+def _stack_queries(tensors: List[torch.Tensor]) -> torch.Tensor:
+    """Stack variable-length query embeddings into a padded batch tensor.
+
+    ColBERT queries are typically padded to the same length, but we handle
+    the variable-length case as a safeguard.
+    """
+    max_len = max(t.shape[0] for t in tensors)
+    dim = tensors[0].shape[1]
+    batch = torch.zeros(len(tensors), max_len, dim)
+    for i, t in enumerate(tensors):
+        batch[i, : t.shape[0]] = t
+    return batch
+
+
+class ColBERTEncoder:
+    """Encode queries/documents with ColBERT and retrieve via fast-plaid."""
+
+    def __init__(
+        self,
+        model_name: str,
+        index_dir: str = "./plaid_index",
+        encode_batch_size: int = 32,
+        device: str | None = None,
+    ):
+        logger.info(f"Loading ColBERT model: {model_name}")
+        self.model = models.ColBERT(model_name_or_path=model_name)
+        self.index_dir = index_dir
+        self.encode_batch_size = encode_batch_size
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.fp_index: fp_search.FastPlaid | None = None
+        self.doc_id_mapping: Dict[int, str] = {}
+        self.total_docs: int = 0
+
+    def encode_and_index_documents(
+        self,
+        documents: List[str],
+        document_ids: List[str],
+        index_name: str = "documents",
+        batch_size: int = 500,
+    ) -> None:
+        """Encode documents with ColBERT and build a fast-plaid index.
+
+        First batch uses create() to build centroids, subsequent batches
+        use update() for incremental addition.
+        """
+        logger.info(f"Encoding and indexing {len(documents)} documents...")
+
+        os.makedirs(self.index_dir, exist_ok=True)
+        index_path = os.path.join(self.index_dir, index_name)
+
+        # Reset state for fresh index
+        self.fp_index = None
+        self.doc_id_mapping = {}
+        self.total_docs = 0
+
+        for start in range(0, len(documents), batch_size):
+            end = min(start + batch_size, len(documents))
+            batch_docs = documents[start:end]
+            batch_ids = document_ids[start:end]
+
+            logger.info(
+                f"  Encoding documents [{start}:{end}] / {len(documents)}"
+            )
+            embeddings = self.model.encode(
+                batch_docs,
+                batch_size=self.encode_batch_size,
+                is_query=False,
+                show_progress_bar=True,
+            )
+            tensor_embs = _to_tensors(embeddings)
+
+            # Update doc_id mapping (fast-plaid uses sequential int indices)
+            for i, did in enumerate(batch_ids):
+                self.doc_id_mapping[self.total_docs + i] = did
+
+            if self.fp_index is None:
+                self.fp_index = fp_search.FastPlaid(
+                    index=index_path, device=self.device
+                )
+                self.fp_index.create(documents_embeddings=tensor_embs)
+            else:
+                self.fp_index.update(documents_embeddings=tensor_embs)
+
+            self.total_docs += len(batch_docs)
+
+        logger.info(
+            f"Document indexing complete. "
+            f"Total: {self.total_docs} documents indexed."
+        )
+
+    def retrieve(
+        self,
+        queries: List[str],
+        query_ids: List[str],
+        top_k: int = 200,
+        batch_size: int = 500,
+    ) -> Dict[str, List[Tuple[str, float]]]:
+        """Retrieve top-K documents for each query.
+
+        Returns:
+            Dict mapping query_id -> list of (document_id, score) sorted by
+            score descending.
+        """
+        if self.fp_index is None:
+            raise RuntimeError(
+                "Index not built. Call encode_and_index_documents first."
+            )
+
+        logger.info(f"Retrieving top-{top_k} for {len(queries)} queries...")
+
+        all_results: Dict[str, List[Tuple[str, float]]] = {}
+
+        for start in range(0, len(queries), batch_size):
+            end = min(start + batch_size, len(queries))
+            batch_queries = queries[start:end]
+            batch_qids = query_ids[start:end]
+
+            logger.info(
+                f"  Retrieving for queries [{start}:{end}] / {len(queries)}"
+            )
+            embeddings = self.model.encode(
+                batch_queries,
+                batch_size=self.encode_batch_size,
+                is_query=True,
+                show_progress_bar=True,
+            )
+            tensor_embs = _to_tensors(embeddings)
+            queries_batch = _stack_queries(tensor_embs)
+
+            results = self.fp_index.search(
+                queries_embeddings=queries_batch,
+                top_k=top_k,
+            )
+
+            for qid, result_list in zip(batch_qids, results):
+                all_results[qid] = [
+                    (self.doc_id_mapping[doc_idx], score)
+                    for doc_idx, score in result_list
+                ]
+
+        logger.info("Retrieval complete.")
+        return all_results

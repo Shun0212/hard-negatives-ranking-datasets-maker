@@ -1,0 +1,69 @@
+datasets:
+  - name: "Shuu12121/javascript-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["javascript"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/ruby-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["ruby"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/go-treesitter-dedupe-filtered-dataset"
+    languages: ["go"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/java-treesitter-dedupe-filtered-dataset"
+    languages: ["java"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/rust-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["rust"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/php-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["php"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/python-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["python"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+  - name: "Shuu12121/typescript-treesitter-dedupe-filtered-datasetsV2"
+    languages: ["typescript"]
+    query_field: "docstring"
+    documents_field: "code"
+    lang_as_config: false
+    dataset_type: "paired"
+
+embedding_models:
+  - name: "Shuu12121/CodeSearch-ModernBERT-Crow-v3-large-len1024-ColBERT-Shuu12121-120_1epochs"
+    architecture: "colbert"
+
+mining_config:
+  top_k: 200
+  encode_batch_size: 32
+  index_batch_size: 500
+  query_batch_size: 500
+  nv_threshold: 0.95
+  num_negatives: 100
+  index_dir: "./plaid_index"
+  cache_dir: "./cache"
+  device: ""  # auto-detect (cuda / cpu)
+
+upload_config:
+  dataset: "Shuu12121/code_search_hard_negative_datasets"
+  max_per_language: 100000
+  max_per_query: 100
