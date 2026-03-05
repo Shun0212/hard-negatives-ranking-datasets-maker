@@ -68,23 +68,28 @@ class ColBERTEncoder:
     ) -> None:
         """Encode documents with ColBERT and build a fast-plaid index.
 
-        First batch uses create() to build centroids, subsequent batches
-        use update() for incremental addition.
+        Encodes in batches for GPU memory efficiency, then creates the
+        fast-plaid index with ALL documents at once so that K-means
+        centroids are computed from the full corpus.
         """
-        logger.info(f"Encoding and indexing {len(documents)} documents...")
+        logger.info(f"Encoding {len(documents)} documents...")
 
         os.makedirs(self.index_dir, exist_ok=True)
         index_path = os.path.join(self.index_dir, index_name)
 
-        # Reset state for fresh index
-        self.fp_index = None
+        # Reset state
         self.doc_id_mapping = {}
-        self.total_docs = 0
+        self.total_docs = len(documents)
 
+        # Build doc_id mapping (fast-plaid uses sequential int indices)
+        for i, did in enumerate(document_ids):
+            self.doc_id_mapping[i] = did
+
+        # Step 1: Encode all documents in batches, accumulate tensors
+        all_embeddings: List[torch.Tensor] = []
         for start in range(0, len(documents), batch_size):
             end = min(start + batch_size, len(documents))
             batch_docs = documents[start:end]
-            batch_ids = document_ids[start:end]
 
             logger.info(
                 f"  Encoding documents [{start}:{end}] / {len(documents)}"
@@ -95,21 +100,16 @@ class ColBERTEncoder:
                 is_query=False,
                 show_progress_bar=True,
             )
-            tensor_embs = _to_tensors(embeddings)
+            all_embeddings.extend(_to_tensors(embeddings))
 
-            # Update doc_id mapping (fast-plaid uses sequential int indices)
-            for i, did in enumerate(batch_ids):
-                self.doc_id_mapping[self.total_docs + i] = did
-
-            if self.fp_index is None:
-                self.fp_index = fp_search.FastPlaid(
-                    index=index_path, device=self.device
-                )
-                self.fp_index.create(documents_embeddings=tensor_embs)
-            else:
-                self.fp_index.update(documents_embeddings=tensor_embs)
-
-            self.total_docs += len(batch_docs)
+        # Step 2: Create index with ALL documents at once
+        logger.info(
+            f"Building fast-plaid index with {len(all_embeddings)} documents..."
+        )
+        self.fp_index = fp_search.FastPlaid(
+            index=index_path, device=self.device
+        )
+        self.fp_index.create(documents_embeddings=all_embeddings)
 
         logger.info(
             f"Document indexing complete. "

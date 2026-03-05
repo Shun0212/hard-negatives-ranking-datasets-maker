@@ -117,20 +117,19 @@ def main() -> None:
                         language=bundle.language,
                     )
 
-            # Build and save/upload contrastive format
+            # Build and save/upload contrastive format (all negatives with scores, no threshold)
             if args.output_format in ("contrastive", "both"):
                 converter = KDToContrastive(
                     kd_results=kd_results,
                     bundle=bundle,
                     num_negatives=config.upload_config.max_per_query,
-                    nv_threshold=config.mining_config.nv_threshold,
                     max_per_language=config.upload_config.max_per_language,
                 )
                 contrastive_ds = converter.convert()
 
                 if len(contrastive_ds) == 0:
                     logger.warning(
-                        f"No queries passed threshold for {bundle.language}"
+                        f"No valid queries for {bundle.language}"
                     )
                     continue
 

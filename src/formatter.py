@@ -1,7 +1,8 @@
 """Format mining results into KD and contrastive datasets."""
 
 import logging
-from typing import Dict, List
+import random
+from typing import Any, Dict, List
 
 import datasets as hf_datasets
 
@@ -73,94 +74,97 @@ def build_kd_dataset(
 class KDToContrastive:
     """Convert KD-format results to contrastive training format.
 
-    Filters hard negatives by score threshold (NV-Retriever style):
-    a negative is valid if score < nv_threshold * positive_score.
-    Only queries with enough valid negatives are included.
+    Saves all negatives with their scores without threshold filtering.
+    Threshold-based filtering can be applied later using the saved scores.
 
-    Output columns: query, positive, negative_0, negative_1, ..., negative_N
+    Output columns:
+        query, positive, positive_score,
+        negative_0, negative_0_score, ..., negative_N, negative_N_score
     """
 
     def __init__(
         self,
         kd_results: List[KDResult],
         bundle: DatasetBundle,
-        num_negatives: int = 32,
-        nv_threshold: float = 0.95,
+        num_negatives: int = 100,
         max_per_language: int = 100000,
+        seed: int = 42,
     ):
         self.kd_results = kd_results
         self.query_id_to_text = dict(zip(bundle.query_ids, bundle.queries))
         self.doc_id_to_text = dict(zip(bundle.document_ids, bundle.documents))
         self.num_negatives = num_negatives
-        self.nv_threshold = nv_threshold
         self.max_per_language = max_per_language
-
-    def has_enough_negatives(self, kd_result: KDResult) -> bool:
-        """Check if a query has at least num_negatives valid hard negatives."""
-        scores = kd_result.scores
-        if len(scores) < 2:
-            return False
-        positive_score = scores[0]
-        if positive_score <= 0:
-            return False
-        count = sum(
-            1
-            for score in scores[1:]
-            if score < self.nv_threshold * positive_score and score != -1
-        )
-        return count >= self.num_negatives
+        self.seed = seed
 
     def convert(self) -> hf_datasets.Dataset:
-        """Convert KD results to contrastive format Dataset.
+        """Convert KD results to contrastive format Dataset with scores.
 
-        Each row: query, positive, negative_0, ..., negative_{num_negatives-1}
+        Each row contains query, positive (with score), and up to
+        num_negatives negatives (each with score), sorted by score descending.
+        No threshold filtering is applied.
+        When max_per_language < total valid queries, rows are randomly sampled.
         """
-        rows: List[Dict[str, str]] = []
+        # First pass: collect all valid rows
+        all_rows: List[Dict[str, Any]] = []
 
         for kd_result in self.kd_results:
-            if len(rows) >= self.max_per_language:
-                break
+            # Need at least a positive and one negative
+            if len(kd_result.document_ids) < 2:
+                continue
 
-            if not self.has_enough_negatives(kd_result):
+            # Skip if the positive was not retrieved (score == -1)
+            if kd_result.scores[0] <= 0:
                 continue
 
             query_text = self.query_id_to_text[kd_result.query_id]
             positive_id = kd_result.document_ids[0]
             positive_text = self.doc_id_to_text[positive_id]
-            positive_score = kd_result.scores[0]
+            positive_score = float(kd_result.scores[0])
 
-            row: Dict[str, str] = {
+            row: Dict[str, Any] = {
                 "query": query_text,
                 "positive": positive_text,
+                "positive_score": positive_score,
             }
 
             neg_count = 0
             for i in range(1, len(kd_result.document_ids)):
-                score = kd_result.scores[i]
-                if score < self.nv_threshold * positive_score and score != -1:
-                    doc_id = kd_result.document_ids[i]
-                    row[f"negative_{neg_count}"] = self.doc_id_to_text[doc_id]
-                    neg_count += 1
-                    if neg_count >= self.num_negatives:
-                        break
+                if neg_count >= self.num_negatives:
+                    break
+                doc_id = kd_result.document_ids[i]
+                score = float(kd_result.scores[i])
+                row[f"negative_{neg_count}"] = self.doc_id_to_text[doc_id]
+                row[f"negative_{neg_count}_score"] = score
+                neg_count += 1
 
-            rows.append(row)
+            all_rows.append(row)
 
-        if not rows:
-            logger.warning("No queries passed the threshold filter")
+        if not all_rows:
+            logger.warning("No valid queries to convert")
             return hf_datasets.Dataset.from_dict({})
 
-        # Ensure all rows have the same columns (pad missing negatives)
-        for row in rows:
+        # Random sampling if over limit
+        if len(all_rows) > self.max_per_language:
+            logger.info(
+                f"Randomly sampling {self.max_per_language} / {len(all_rows)} "
+                f"rows (seed={self.seed})"
+            )
+            rng = random.Random(self.seed)
+            all_rows = rng.sample(all_rows, self.max_per_language)
+
+        # Pad missing negatives with empty string / 0.0
+        for row in all_rows:
             for i in range(self.num_negatives):
                 row.setdefault(f"negative_{i}", "")
+                row.setdefault(f"negative_{i}_score", 0.0)
 
         # Build column-oriented dict for Dataset creation
-        columns = list(rows[0].keys())
-        data = {col: [row[col] for row in rows] for col in columns}
+        columns = list(all_rows[0].keys())
+        data = {col: [row[col] for row in all_rows] for col in columns}
 
         logger.info(
-            f"Converted {len(rows)} queries to contrastive format "
-            f"({self.num_negatives} negatives each)"
+            f"Converted {len(all_rows)} queries to contrastive format "
+            f"(up to {self.num_negatives} negatives each, with scores)"
         )
         return hf_datasets.Dataset.from_dict(data)

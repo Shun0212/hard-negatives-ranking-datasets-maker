@@ -30,9 +30,9 @@ embedding_models:
 mining_config:
   top_k: 200
   encode_batch_size: 32
-  index_batch_size: 500
-  query_batch_size: 500
-  nv_threshold: 0.95
+  index_batch_size: 50000
+  query_batch_size: 50000
+  nv_threshold: 0.99
   num_negatives: 100
   index_dir: "./plaid_index"
   cache_dir: "./cache"
@@ -40,5 +40,5 @@ mining_config:
 
 upload_config:
   dataset: "Shuu12121/coir_hard_negative_datasets"
-  max_per_language: 100000
+  max_per_language: 10000000000
   max_per_query: 100

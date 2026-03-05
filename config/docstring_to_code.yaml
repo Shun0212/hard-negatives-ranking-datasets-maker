@@ -55,15 +55,15 @@ embedding_models:
 mining_config:
   top_k: 200
   encode_batch_size: 32
-  index_batch_size: 500
-  query_batch_size: 500
-  nv_threshold: 0.95
+  index_batch_size: 50000
+  query_batch_size: 50000
+  nv_threshold: 0.99
   num_negatives: 100
   index_dir: "./plaid_index"
   cache_dir: "./cache"
   device: ""  # auto-detect (cuda / cpu)
 
 upload_config:
-  dataset: "Shuu12121/code_search_hard_negative_datasets"
-  max_per_language: 100000
+  dataset: "Shuu12121/owl_code_search_hard_negative_datasets"
+  max_per_language: 1000000000
   max_per_query: 100
