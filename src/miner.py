@@ -1,8 +1,9 @@
 """Hard negative mining pipeline using ColBERT retrieval."""
 
 import logging
+import random
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .config import MiningConfig
 from .data_loader import DatasetBundle
@@ -32,23 +33,52 @@ class HardNegativeMiner:
         self.encoder = encoder
         self.config = config
 
-    def mine(self, bundle: DatasetBundle) -> Tuple[List[KDResult], DatasetBundle]:
+    def mine(
+        self,
+        bundle: DatasetBundle,
+        max_queries: Optional[int] = None,
+        seed: int = 42,
+    ) -> Tuple[List[KDResult], DatasetBundle]:
         """Mine hard negatives for a dataset bundle.
 
         1. Encode and index all documents
-        2. Retrieve top-K candidates for each query
-        3. Separate positives from negatives
-        4. Build KD-format results
+        2. Pre-sample queries if max_queries is set (before encoding)
+        3. Retrieve top-K candidates for each query
+        4. Separate positives from negatives
+        5. Build KD-format results
+
+        Args:
+            bundle: The dataset bundle to mine.
+            max_queries: If set, randomly sample this many queries before
+                encoding/retrieval to save GPU time.
+            seed: Random seed for query sampling reproducibility.
 
         Returns:
-            Tuple of (list of KDResult, the original DatasetBundle).
+            Tuple of (list of KDResult, the updated DatasetBundle).
         """
         logger.info(
             f"Mining hard negatives for {bundle.language}: "
             f"{len(bundle.queries)} queries, {len(bundle.documents)} documents"
         )
 
-        # Step 1: Encode and index documents
+        # Step 1: Pre-sample queries if max_queries is set
+        queries = bundle.queries
+        query_ids = bundle.query_ids
+        qrels = bundle.qrels
+
+        if max_queries and len(queries) > max_queries:
+            logger.info(
+                f"Pre-sampling {max_queries} / {len(queries)} queries "
+                f"(seed={seed}) before encoding"
+            )
+            rng = random.Random(seed)
+            indices = rng.sample(range(len(queries)), max_queries)
+            indices.sort()  # Keep order for deterministic processing
+            queries = [queries[i] for i in indices]
+            query_ids = [query_ids[i] for i in indices]
+            qrels = {qid: bundle.qrels[qid] for qid in query_ids if qid in bundle.qrels}
+
+        # Step 2: Encode and index ALL documents (full corpus needed for retrieval)
         index_name = f"{bundle.language}_{abs(hash(bundle.dataset_name)) % 100000}"
         self.encoder.encode_and_index_documents(
             documents=bundle.documents,
@@ -57,26 +87,27 @@ class HardNegativeMiner:
             batch_size=self.config.index_batch_size,
         )
 
-        # Step 2: Retrieve top-K for each query
+        # Step 3: Retrieve top-K for each (sampled) query
         retrieval_results = self.encoder.retrieve(
-            queries=bundle.queries,
-            query_ids=bundle.query_ids,
+            queries=queries,
+            query_ids=query_ids,
             top_k=self.config.top_k,
             batch_size=self.config.query_batch_size,
+            search_batch_size=self.config.search_batch_size,
         )
 
-        # Step 3: Build KD results
+        # Step 4: Build KD results
         kd_results = []
         skipped_no_results = 0
         positive_not_retrieved = 0
 
-        for qid in bundle.query_ids:
+        for qid in query_ids:
             if qid not in retrieval_results:
                 skipped_no_results += 1
                 continue
 
             results = retrieval_results[qid]
-            positive_ids = set(bundle.qrels.get(qid, []))
+            positive_ids = set(qrels.get(qid, []))
 
             # Separate positives and negatives from retrieval results
             positive_entries: List[Tuple[str, float]] = []
@@ -129,4 +160,15 @@ class HardNegativeMiner:
             )
         logger.info(f"Generated KD results for {len(kd_results)} queries")
 
-        return kd_results, bundle
+        # Return updated bundle with sampled queries
+        sampled_bundle = DatasetBundle(
+            queries=queries,
+            query_ids=query_ids,
+            documents=bundle.documents,
+            document_ids=bundle.document_ids,
+            qrels=qrels,
+            language=bundle.language,
+            dataset_name=bundle.dataset_name,
+        )
+
+        return kd_results, sampled_bundle

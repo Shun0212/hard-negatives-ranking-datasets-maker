@@ -90,7 +90,10 @@ def main() -> None:
             logger.info(f"--- Language: {bundle.language} ---")
 
             # Mine hard negatives
-            kd_results, bundle = miner.mine(bundle)
+            kd_results, bundle = miner.mine(
+                bundle,
+                max_queries=config.upload_config.max_per_language,
+            )
 
             if not kd_results:
                 logger.warning(f"No results for {bundle.language}, skipping")

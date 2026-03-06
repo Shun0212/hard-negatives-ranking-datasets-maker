@@ -46,6 +46,7 @@ class MiningConfig:
     encode_batch_size: int = 32
     index_batch_size: int = 500
     query_batch_size: int = 500
+    search_batch_size: int = 25000
     nv_threshold: float = 0.95
     num_negatives: int = 100
     index_dir: str = "./plaid_index"

@@ -122,8 +122,16 @@ class ColBERTEncoder:
         query_ids: List[str],
         top_k: int = 200,
         batch_size: int = 500,
+        search_batch_size: int = 25000,
     ) -> Dict[str, List[Tuple[str, float]]]:
         """Retrieve top-K documents for each query.
+
+        Args:
+            queries: List of query texts.
+            query_ids: List of query IDs.
+            top_k: Number of top results to retrieve per query.
+            batch_size: Batch size for encoding queries.
+            search_batch_size: Internal batch size for fast-plaid search.
 
         Returns:
             Dict mapping query_id -> list of (document_id, score) sorted by
@@ -155,9 +163,15 @@ class ColBERTEncoder:
             tensor_embs = _to_tensors(embeddings)
             queries_batch = _stack_queries(tensor_embs)
 
+            # Use n_full_scores slightly above top_k for speed.
+            # n_ivf_probe=2 reduces cluster probes (default=8) for faster search.
+            n_full_scores = max(top_k * 4, 256)
             results = self.fp_index.search(
                 queries_embeddings=queries_batch,
                 top_k=top_k,
+                batch_size=search_batch_size,
+                n_full_scores=n_full_scores,
+                n_ivf_probe=2,
             )
 
             for qid, result_list in zip(batch_qids, results):
