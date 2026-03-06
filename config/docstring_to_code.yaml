@@ -49,8 +49,8 @@ datasets:
     dataset_type: "paired"
 
 embedding_models:
-  - name: "Shuu12121/CodeSearch-ModernBERT-Crow-v3-large-len1024-ColBERT-Shuu12121-120_1epochs"
-    architecture: "colbert"
+  - name: "Shuu12121/ColModernBERT-Crow-v3-large-len1024-Pre"
+    architecture: "sentence-transformers"
 
 mining_config:
   top_k: 32

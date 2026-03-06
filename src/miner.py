@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .config import MiningConfig
 from .data_loader import DatasetBundle
-from .encoder import ColBERTEncoder
+from .base_encoder import BaseEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,9 @@ class KDResult:
 
 
 class HardNegativeMiner:
-    """Mine hard negatives using ColBERT retrieval via PyLate."""
+    """Mine hard negatives using configurable encoder backends."""
 
-    def __init__(self, encoder: ColBERTEncoder, config: MiningConfig):
+    def __init__(self, encoder: BaseEncoder, config: MiningConfig):
         self.encoder = encoder
         self.config = config
 

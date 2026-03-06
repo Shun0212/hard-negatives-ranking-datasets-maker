@@ -1,4 +1,4 @@
-"""Hard Negative Mining with ColBERT via PyLate.
+"""Hard Negative Mining with ColBERT or Sentence-Transformers.
 
 Usage:
     uv run python main.py --config config/docstring_to_code.yaml --output-format both --save-local ./output
@@ -11,9 +11,9 @@ import os
 
 from dotenv import load_dotenv
 
-from src.config import load_config
+from src.base_encoder import BaseEncoder
+from src.config import EmbeddingModelConfig, MiningConfig, load_config
 from src.data_loader import load_dataset_bundle
-from src.encoder import ColBERTEncoder
 from src.formatter import KDToContrastive, build_kd_dataset
 from src.miner import HardNegativeMiner
 from src.uploader import upload_dataset, upload_kd_dataset
@@ -23,6 +23,47 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def create_encoder(
+    model_config: EmbeddingModelConfig,
+    mining_config: MiningConfig,
+) -> BaseEncoder:
+    """Create the appropriate encoder based on architecture config."""
+    arch = model_config.architecture
+
+    if arch == "colbert":
+        from src.encoder import ColBERTEncoder
+
+        return ColBERTEncoder(
+            model_name=model_config.name,
+            index_dir=mining_config.index_dir,
+            encode_batch_size=mining_config.encode_batch_size,
+            device=mining_config.device or None,
+        )
+    elif arch == "sentence-transformers":
+        from src.sentence_transformer_encoder import SentenceTransformerEncoder
+
+        faiss_cfg = mining_config.faiss
+        return SentenceTransformerEncoder(
+            model_name=model_config.name,
+            index_dir=mining_config.faiss_index_dir,
+            encode_batch_size=mining_config.encode_batch_size,
+            device=mining_config.device or None,
+            faiss_index_type=faiss_cfg.index_type,
+            faiss_metric=faiss_cfg.metric,
+            faiss_nlist=faiss_cfg.nlist,
+            faiss_nprobe=faiss_cfg.nprobe,
+            faiss_m_pq=faiss_cfg.m_pq,
+            faiss_hnsw_m=faiss_cfg.hnsw_m,
+            faiss_ef_search=faiss_cfg.ef_search,
+            faiss_use_gpu=faiss_cfg.use_gpu,
+        )
+    else:
+        raise ValueError(
+            f"Unknown architecture: {arch}. "
+            "Use 'colbert' or 'sentence-transformers'."
+        )
 
 
 def main() -> None:
@@ -71,12 +112,7 @@ def main() -> None:
     model_config = config.embedding_models[0]
 
     # Initialize encoder
-    encoder = ColBERTEncoder(
-        model_name=model_config.name,
-        index_dir=config.mining_config.index_dir,
-        encode_batch_size=config.mining_config.encode_batch_size,
-        device=config.mining_config.device or None,
-    )
+    encoder = create_encoder(model_config, config.mining_config)
 
     # Initialize miner
     miner = HardNegativeMiner(encoder=encoder, config=config.mining_config)

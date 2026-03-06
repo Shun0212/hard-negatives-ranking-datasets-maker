@@ -9,6 +9,8 @@ import torch
 from fast_plaid import search as fp_search
 from pylate import models
 
+from .base_encoder import BaseEncoder
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ def _stack_queries(tensors: List[torch.Tensor]) -> torch.Tensor:
     return batch
 
 
-class ColBERTEncoder:
+class ColBERTEncoder(BaseEncoder):
     """Encode queries/documents with ColBERT and retrieve via fast-plaid."""
 
     def __init__(

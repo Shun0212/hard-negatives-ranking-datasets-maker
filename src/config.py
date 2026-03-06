@@ -39,6 +39,20 @@ class EmbeddingModelConfig:
 
 
 @dataclass
+class FaissConfig:
+    """FAISS-specific index configuration."""
+
+    index_type: str = "flat"  # "flat", "ivf", "ivfpq", "hnsw"
+    metric: str = "cosine"  # "cosine", "ip", "l2"
+    nlist: int = 100  # Number of IVF clusters
+    nprobe: int = 10  # Number of clusters to probe at search time
+    m_pq: int = 8  # Number of PQ sub-quantizers (for ivfpq)
+    hnsw_m: int = 32  # HNSW graph degree
+    ef_search: int = 64  # HNSW search depth
+    use_gpu: bool = False  # Move FAISS index to GPU
+
+
+@dataclass
 class MiningConfig:
     """Configuration for hard negative mining."""
 
@@ -50,8 +64,10 @@ class MiningConfig:
     nv_threshold: float = 0.95
     num_negatives: int = 100
     index_dir: str = "./plaid_index"
+    faiss_index_dir: str = "./faiss_index"
     cache_dir: str = "./cache"
     device: str = ""  # "" = auto-detect (cuda if available, else cpu)
+    faiss: FaissConfig = field(default_factory=FaissConfig)
 
 
 @dataclass
@@ -82,7 +98,8 @@ def load_config(path: str) -> ProjectConfig:
     models = [EmbeddingModelConfig(**m) for m in raw["embedding_models"]]
 
     mining_raw = raw.get("mining_config", {})
-    mining = MiningConfig(**mining_raw)
+    faiss_raw = mining_raw.pop("faiss", {})
+    mining = MiningConfig(**mining_raw, faiss=FaissConfig(**faiss_raw))
 
     upload_raw = raw.get("upload_config", {})
     # Handle the list-of-single-key-dicts format (original config style)
