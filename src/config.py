@@ -28,6 +28,7 @@ class DatasetConfig:
     qrels_query_id_field: str = "query-id"
     qrels_corpus_id_field: str = "corpus-id"
     qrels_score_field: str = "score"
+    strip_docstrings: bool = False  # Remove docstrings from Python code documents
 
 
 @dataclass

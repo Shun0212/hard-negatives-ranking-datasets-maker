@@ -1,5 +1,6 @@
 """Dataset loaders for paired (docstring-code) and CoIR (BEIR-format) datasets."""
 
+import ast
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List
@@ -9,6 +10,56 @@ import datasets as hf_datasets
 from .config import DatasetConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _strip_python_docstrings(code: str) -> str:
+    """Remove all docstrings from Python source code using the ast module.
+
+    Handles module-level, class-level, and function/method-level docstrings.
+    Returns the original code unchanged if parsing fails.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    # Collect line ranges of docstring nodes to remove
+    # Docstrings are Expr nodes containing a Constant(str) as the first
+    # statement of a module, class, or function body.
+    remove_lines: list[tuple[int, int]] = []
+
+    def _check_docstring(body: list[ast.stmt]) -> None:
+        if not body:
+            return
+        first = body[0]
+        if (
+            isinstance(first, ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+        ):
+            remove_lines.append((first.lineno, first.end_lineno))
+
+    _check_docstring(tree.body)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            _check_docstring(node.body)
+
+    if not remove_lines:
+        return code
+
+    lines = code.splitlines(keepends=True)
+    # Build set of 1-indexed line numbers to remove
+    remove_set: set[int] = set()
+    for start, end in remove_lines:
+        for ln in range(start, (end or start) + 1):
+            remove_set.add(ln)
+
+    result = []
+    for i, line in enumerate(lines, start=1):
+        if i not in remove_set:
+            result.append(line)
+
+    return "".join(result)
 
 
 @dataclass
@@ -56,12 +107,16 @@ def load_paired_dataset(config: DatasetConfig) -> List[DatasetBundle]:
             if not query_text or not doc_text:
                 continue
 
+            doc_text = str(doc_text)
+            if config.strip_docstrings and lang == "python":
+                doc_text = _strip_python_docstrings(doc_text)
+
             qid = f"q_{lang}_{i}"
             did = f"d_{lang}_{i}"
 
             queries.append(str(query_text))
             query_ids.append(qid)
-            documents.append(str(doc_text))
+            documents.append(doc_text)
             document_ids.append(did)
             qrels[qid] = [did]
 
