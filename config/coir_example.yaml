@@ -37,6 +37,8 @@ mining_config:
   index_dir: "./plaid_index"
   cache_dir: "./cache"
   device: ""  # auto-detect (cuda / cpu)
+  faiss:
+    use_gpu: true
 
 upload_config:
   dataset: "Shuu12121/coir_hard_negative_datasets"
