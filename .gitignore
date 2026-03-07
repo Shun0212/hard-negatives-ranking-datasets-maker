@@ -3,6 +3,7 @@ __pycache__/
 *.py[codz]
 *$py.class
 plaid_index/
+faiss_index/
 
 # C extensions
 *.so

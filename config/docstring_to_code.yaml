@@ -11,13 +11,13 @@ datasets:
     documents_field: "code"
     lang_as_config: false
     dataset_type: "paired"
-  - name: "Shuu12121/go-treesitter-dedupe-filtered-datasetV2"
+  - name: "Shuu12121/go-treesitter-dedupe-filtered-datasetsV2"
     languages: ["go"]
     query_field: "docstring"
     documents_field: "code"
     lang_as_config: false
     dataset_type: "paired"
-  - name: "Shuu12121/java-treesitter-dedupe-filtered-datasetV2"
+  - name: "Shuu12121/java-treesitter-dedupe-filtered-datasetsV2"
     languages: ["java"]
     query_field: "docstring"
     documents_field: "code"
@@ -66,7 +66,7 @@ mining_config:
 
 upload_config:
   dataset: "Shuu12121/owl_code_search_hard_negative_datasets"
-  max_per_language: 100000
+  max_per_language: 100000000
   max_per_query: 32
-  
+
 strip_docstrings: true
