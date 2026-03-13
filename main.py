@@ -2,7 +2,7 @@
 
 Usage:
     uv run python main.py --config config/docstring_to_code.yaml --output-format both --save-local ./output
-    uv run python main.py --config config/docstring_to_code.yaml --upload
+    uv run python main.py --config config\docstring_to_code-multi-lang-codesearch-query-qwen.yaml --upload
 """
 
 import argparse

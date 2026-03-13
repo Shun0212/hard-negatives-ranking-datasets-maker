@@ -1,0 +1,30 @@
+datasets:
+  - name: "Shuu12121/multi-lang-codesearch-query-qwen3.5-9b"
+    languages: ["javascript","ruby","go","java","rust","php","python","typescript"]
+    query_field: "llm_explanation_en"
+    documents_field: "code"
+    lang_as_config: true
+    dataset_type: "paired"
+
+embedding_models:
+  - name: "Shuu12121/CodeSearch-ModernBERT-Crow-v3-large-len1024-Plus"
+    architecture: "sentence-transformers"
+
+mining_config:
+  top_k: 100
+  encode_batch_size: 32
+  index_batch_size: 50000
+  query_batch_size: 50000
+  search_batch_size: 2500
+  nv_threshold: 0.99
+  num_negatives: 100
+  index_dir: "./plaid_index"
+  cache_dir: "./cache"
+  device: ""  # auto-detect (cuda / cpu)
+
+upload_config:
+  dataset: "Shuu12121/llm_query_code_search_hard_negative_datasets"
+  max_per_language: 100000000
+  max_per_query: 100
+
+strip_docstrings: true
