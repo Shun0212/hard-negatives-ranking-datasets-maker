@@ -123,8 +123,17 @@ def main() -> None:
         logger.info(f"=== Processing dataset: {ds_config.name} ===")
         bundles = load_dataset_bundle(ds_config)
 
+        # Derive a short task prefix for config naming (e.g. "codesearchnet")
+        task_prefix = ds_config.name.split("/")[-1].lower()
+
         for bundle in bundles:
             logger.info(f"--- Language: {bundle.language} ---")
+
+            # Build config_name: for CoIR use "task-lang", for paired use "lang"
+            if ds_config.dataset_type == "coir":
+                config_name = f"{task_prefix}-{bundle.language}"
+            else:
+                config_name = bundle.language
 
             # Mine hard negatives
             kd_results, bundle = miner.mine(
@@ -133,7 +142,7 @@ def main() -> None:
             )
 
             if not kd_results:
-                logger.warning(f"No results for {bundle.language}, skipping")
+                logger.warning(f"No results for {config_name}, skipping")
                 continue
 
             # Build and save/upload KD format
@@ -145,7 +154,7 @@ def main() -> None:
                 if args.save_local:
                     for name, ds in kd_datasets.items():
                         path = os.path.join(
-                            args.save_local, "kd", bundle.language, name
+                            args.save_local, "kd", config_name, name
                         )
                         ds.save_to_disk(path)
                         logger.info(f"Saved KD/{name} to {path}")
@@ -154,7 +163,7 @@ def main() -> None:
                     upload_kd_dataset(
                         kd_datasets,
                         config.upload_config.dataset + "_kd",
-                        language=bundle.language,
+                        language=config_name,
                     )
 
             # Build and save/upload contrastive format (all negatives with scores, no threshold)
@@ -169,18 +178,18 @@ def main() -> None:
 
                 if len(contrastive_ds) == 0:
                     logger.warning(
-                        f"No valid queries for {bundle.language}"
+                        f"No valid queries for {config_name}"
                     )
                     continue
 
                 logger.info(
                     f"Contrastive dataset: {len(contrastive_ds)} rows "
-                    f"for {bundle.language}"
+                    f"for {config_name}"
                 )
 
                 if args.save_local:
                     path = os.path.join(
-                        args.save_local, "contrastive", bundle.language
+                        args.save_local, "contrastive", config_name
                     )
                     contrastive_ds.save_to_disk(path)
                     logger.info(f"Saved contrastive to {path}")
@@ -189,7 +198,7 @@ def main() -> None:
                     upload_dataset(
                         contrastive_ds,
                         config.upload_config.dataset,
-                        config_name=bundle.language,
+                        config_name=config_name,
                     )
 
     logger.info("=== All done! ===")
