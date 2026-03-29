@@ -9,12 +9,16 @@ datasets:
     dataset_type: "coir"
     query_field: ""          # not used for CoIR
     documents_field: ""      # not used for CoIR
-    lang_as_config: false
+    lang_as_config: true
+    lang_config_format: "{lang}-{config}"
     split: "test"
     # CoIR-specific field mapping
     corpus_config: "corpus"
     queries_config: "queries"
-    qrels_config: "default"
+    qrels_config: "qrels"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "test"
     corpus_text_field: "text"
     corpus_id_field: "_id"
     queries_text_field: "text"
@@ -24,8 +28,8 @@ datasets:
     qrels_score_field: "score"
 
 embedding_models:
-  - name: "Shuu12121/CodeSearch-ModernBERT-Crow-v3-large-len1024-ColBERT-Shuu12121-120_1epochs"
-    architecture: "colbert"
+  - name: "Qwen/Qwen3-Embedding-0.6B"
+    architecture: "sentence-transformers"
 
 mining_config:
   top_k: 200

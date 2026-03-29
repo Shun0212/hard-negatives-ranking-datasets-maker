@@ -153,22 +153,27 @@ def load_coir_dataset(config: DatasetConfig) -> List[DatasetBundle]:
 
         # Build config names, optionally appending language
         if config.lang_as_config:
-            corpus_cfg = f"{config.corpus_config}_{lang}"
-            queries_cfg = f"{config.queries_config}_{lang}"
-            qrels_cfg = f"{config.qrels_config}_{lang}"
+            corpus_cfg = config.lang_config_format.format(config=config.corpus_config, lang=lang)
+            queries_cfg = config.lang_config_format.format(config=config.queries_config, lang=lang)
+            qrels_cfg = config.lang_config_format.format(config=config.qrels_config, lang=lang)
         else:
             corpus_cfg = config.corpus_config
             queries_cfg = config.queries_config
             qrels_cfg = config.qrels_config
 
+        # Determine splits for each subset
+        corpus_split = config.corpus_split
+        queries_split = config.queries_split
+        qrels_split = config.qrels_split or config.split
+
         corpus_ds = hf_datasets.load_dataset(
-            config.name, corpus_cfg, split=config.split
+            config.name, corpus_cfg, split=corpus_split
         )
         queries_ds = hf_datasets.load_dataset(
-            config.name, queries_cfg, split=config.split
+            config.name, queries_cfg, split=queries_split
         )
         qrels_ds = hf_datasets.load_dataset(
-            config.name, qrels_cfg, split=config.split
+            config.name, qrels_cfg, split=qrels_split
         )
 
         # Build documents

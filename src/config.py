@@ -21,6 +21,10 @@ class DatasetConfig:
     corpus_config: str = "corpus"
     queries_config: str = "queries"
     qrels_config: str = "default"
+    corpus_split: str = "corpus"    # Split name for corpus dataset
+    queries_split: str = "queries"  # Split name for queries dataset
+    qrels_split: str = ""           # Split name for qrels (empty = use 'split' field)
+    lang_config_format: str = "{config}_{lang}"  # Template for per-language config names
     corpus_text_field: str = "text"
     corpus_id_field: str = "_id"
     queries_text_field: str = "text"

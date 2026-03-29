@@ -1,0 +1,257 @@
+# Hard negative mining configuration for all CoIR benchmark datasets.
+#
+# CoIR (Code Information Retrieval) includes 10 datasets across 4 task types:
+#   - Text-to-Code: CodeSearchNet, CosQA, Apps, StackOverflow-QA, Synthetic-Text2SQL
+#   - Code-to-Code: CodeSearchNet-ccr, CodeTrans-Contest, CodeTrans-DL
+#   - Hybrid-Code:  CodeFeedback-MT, CodeFeedback-ST
+#
+# All CoIR datasets use BEIR format (separate corpus/queries/qrels subsets).
+
+datasets:
+  # ── Text-to-Code ─────────────────────────────────────────────────────────
+  # CodeSearchNet: docstring → code (6 languages, per-language configs)
+  - name: "CoIR-Retrieval/CodeSearchNet"
+    languages: ["go", "java", "javascript", "php", "python", "ruby"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: true
+    lang_config_format: "{lang}-{config}"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "qrels"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # CosQA: natural language query → Python code
+  - name: "CoIR-Retrieval/cosqa"
+    languages: ["python"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # Apps: problem description → Python solution
+  - name: "CoIR-Retrieval/apps"
+    languages: ["python"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # StackOverflow QA: question → code answer
+  - name: "CoIR-Retrieval/stackoverflow-qa"
+    languages: ["mixed"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # Synthetic Text2SQL: natural language → SQL query
+  - name: "CoIR-Retrieval/synthetic-text2sql"
+    languages: ["sql"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # ── Code-to-Code ─────────────────────────────────────────────────────────
+  # CodeSearchNet CCR: cross-language code retrieval (6 languages)
+  - name: "CoIR-Retrieval/CodeSearchNet-ccr"
+    languages: ["go", "java", "javascript", "php", "python", "ruby"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: true
+    lang_config_format: "{lang}-{config}"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "qrels"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # CodeTrans-Contest: code translation (contest problems)
+  - name: "CoIR-Retrieval/codetrans-contest"
+    languages: ["mixed"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # CodeTrans-DL: code translation (deep learning frameworks)
+  - name: "CoIR-Retrieval/codetrans-dl"
+    languages: ["mixed"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # ── Hybrid-Code ──────────────────────────────────────────────────────────
+  # CodeFeedback-MT: multi-turn code feedback retrieval
+  - name: "CoIR-Retrieval/codefeedback-mt"
+    languages: ["mixed"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+  # CodeFeedback-ST: single-turn code feedback retrieval
+  - name: "CoIR-Retrieval/codefeedback-st"
+    languages: ["mixed"]
+    dataset_type: "coir"
+    query_field: ""
+    documents_field: ""
+    lang_as_config: false
+    split: "train"
+    corpus_config: "corpus"
+    queries_config: "queries"
+    qrels_config: "default"
+    corpus_split: "corpus"
+    queries_split: "queries"
+    qrels_split: "train"
+    corpus_text_field: "text"
+    corpus_id_field: "_id"
+    queries_text_field: "text"
+    queries_id_field: "_id"
+    qrels_query_id_field: "query-id"
+    qrels_corpus_id_field: "corpus-id"
+    qrels_score_field: "score"
+
+embedding_models:
+  - name: "Qwen/Qwen3-Embedding-0.6B"
+    architecture: "sentence-transformers"
+
+mining_config:
+  top_k: 200
+  encode_batch_size: 32
+  index_batch_size: 50000
+  query_batch_size: 50000
+  search_batch_size: 5000
+  nv_threshold: 0.99
+  num_negatives: 100
+  index_dir: "./plaid_index"
+  cache_dir: "./cache"
+  device: ""  # auto-detect (cuda / cpu)
+  faiss:
+    use_gpu: true
+
+upload_config:
+  dataset: "Shuu12121/coir_hard_negative_datasets"
+  max_per_language: 10000000000
+  max_per_query: 100
