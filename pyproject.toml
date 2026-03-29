@@ -19,6 +19,6 @@ dependencies = [
     "mteb",
     "pylate>=1.3.3",
     "fast-plaid",
-    "faiss-cpu>=1.7.4",
+    "faiss-gpu-cu12>=1.7.4",
     "tabulate",
 ]

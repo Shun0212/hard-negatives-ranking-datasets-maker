@@ -133,8 +133,14 @@ class SentenceTransformerEncoder(BaseEncoder):
 
         # Optionally move to GPU
         if self.faiss_use_gpu and torch.cuda.is_available():
-            res = faiss.StandardGpuResources()
-            self.index = faiss.index_cpu_to_gpu(res, 0, self.index)
+            try:
+                res = faiss.StandardGpuResources()
+                self.index = faiss.index_cpu_to_gpu(res, 0, self.index)
+            except AttributeError:
+                logger.warning(
+                    "faiss-gpu is not installed; falling back to CPU index. "
+                    "Install faiss-gpu for GPU-accelerated search."
+                )
 
         # Save index to disk
         index_path = os.path.join(self.index_dir, f"{index_name}.faiss")
