@@ -23,6 +23,7 @@ class SentenceTransformerEncoder(BaseEncoder):
         index_dir: str = "./faiss_index",
         encode_batch_size: int = 32,
         device: str | None = None,
+        max_seq_length: int = 0,
         faiss_index_type: str = "flat",
         faiss_metric: str = "cosine",
         faiss_nlist: int = 100,
@@ -35,6 +36,10 @@ class SentenceTransformerEncoder(BaseEncoder):
         logger.info(f"Loading SentenceTransformer model: {model_name}")
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model = SentenceTransformer(model_name, device=self.device)
+        if max_seq_length > 0:
+            self.model.max_seq_length = max_seq_length
+            logger.info(f"Set max_seq_length to {max_seq_length}")
+        logger.info(f"Model max_seq_length: {self.model.max_seq_length}")
         self.index_dir = index_dir
         self.encode_batch_size = encode_batch_size
         self.faiss_index_type = faiss_index_type
@@ -205,6 +210,7 @@ class SentenceTransformerEncoder(BaseEncoder):
 
             # FAISS search
             scores, indices = self.index.search(query_embeddings, top_k)
+            del query_embeddings
 
             for i, qid in enumerate(batch_qids):
                 results = []
@@ -216,6 +222,8 @@ class SentenceTransformerEncoder(BaseEncoder):
                     doc_id = self.doc_id_mapping[idx]
                     results.append((doc_id, score))
                 all_results[qid] = results
+
+            del scores, indices
 
         logger.info("Retrieval complete.")
         return all_results

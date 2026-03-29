@@ -236,12 +236,13 @@ datasets:
 embedding_models:
   - name: "Qwen/Qwen3-Embedding-0.6B"
     architecture: "sentence-transformers"
+    max_seq_length: 1024
 
 mining_config:
   top_k: 200
   encode_batch_size: 32
   index_batch_size: 50000
-  query_batch_size: 50000
+  query_batch_size: 10000
   search_batch_size: 5000
   nv_threshold: 0.99
   num_negatives: 100

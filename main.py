@@ -50,6 +50,7 @@ def create_encoder(
             index_dir=mining_config.faiss_index_dir,
             encode_batch_size=mining_config.encode_batch_size,
             device=mining_config.device or None,
+            max_seq_length=model_config.max_seq_length,
             faiss_index_type=faiss_cfg.index_type,
             faiss_metric=faiss_cfg.metric,
             faiss_nlist=faiss_cfg.nlist,

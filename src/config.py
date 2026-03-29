@@ -41,6 +41,7 @@ class EmbeddingModelConfig:
 
     name: str
     architecture: str = "colbert"
+    max_seq_length: int = 0  # 0 = use model default
 
 
 @dataclass
