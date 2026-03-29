@@ -33,6 +33,7 @@ class DatasetConfig:
     qrels_corpus_id_field: str = "corpus-id"
     qrels_score_field: str = "score"
     strip_docstrings: bool = False  # Remove docstrings from Python code documents
+    deduplicate_corpus: bool = False  # Merge documents with identical text into one ID
 
 
 @dataclass

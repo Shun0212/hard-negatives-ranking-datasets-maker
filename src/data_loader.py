@@ -79,6 +79,54 @@ class DatasetBundle:
     dataset_name: str
 
 
+def _deduplicate_bundle(bundle: DatasetBundle) -> DatasetBundle:
+    """Merge documents with identical text into a single canonical ID.
+
+    Keeps the first-seen ID for each unique text, removes duplicate entries
+    from documents/document_ids, and remaps qrels to use canonical IDs.
+    """
+    text_to_canonical: Dict[str, str] = {}
+    old_to_canonical: Dict[str, str] = {}
+
+    for did, text in zip(bundle.document_ids, bundle.documents):
+        if text not in text_to_canonical:
+            text_to_canonical[text] = did
+        old_to_canonical[did] = text_to_canonical[text]
+
+    # Build deduplicated document lists
+    seen_texts: set = set()
+    new_documents: List[str] = []
+    new_document_ids: List[str] = []
+    for did, text in zip(bundle.document_ids, bundle.documents):
+        if text not in seen_texts:
+            seen_texts.add(text)
+            new_documents.append(text)
+            new_document_ids.append(text_to_canonical[text])
+
+    # Remap qrels to canonical IDs and deduplicate
+    new_qrels: Dict[str, List[str]] = {}
+    for qid, dids in bundle.qrels.items():
+        remapped = list(dict.fromkeys(old_to_canonical.get(d, d) for d in dids))
+        new_qrels[qid] = remapped
+
+    removed = len(bundle.documents) - len(new_documents)
+    if removed > 0:
+        logger.info(
+            f"  Deduplicated corpus: {len(bundle.documents)} -> {len(new_documents)} "
+            f"documents ({removed} duplicates removed)"
+        )
+
+    return DatasetBundle(
+        queries=bundle.queries,
+        query_ids=bundle.query_ids,
+        documents=new_documents,
+        document_ids=new_document_ids,
+        qrels=new_qrels,
+        language=bundle.language,
+        dataset_name=bundle.dataset_name,
+    )
+
+
 def load_paired_dataset(config: DatasetConfig) -> List[DatasetBundle]:
     """Load a paired dataset where each row is a (query, document) pair.
 
@@ -124,17 +172,18 @@ def load_paired_dataset(config: DatasetConfig) -> List[DatasetBundle]:
             f"  Loaded {len(queries)} query-document pairs for {lang}"
         )
 
-        bundles.append(
-            DatasetBundle(
-                queries=queries,
-                query_ids=query_ids,
-                documents=documents,
-                document_ids=document_ids,
-                qrels=qrels,
-                language=lang,
-                dataset_name=config.name,
-            )
+        bundle = DatasetBundle(
+            queries=queries,
+            query_ids=query_ids,
+            documents=documents,
+            document_ids=document_ids,
+            qrels=qrels,
+            language=lang,
+            dataset_name=config.name,
         )
+        if config.deduplicate_corpus:
+            bundle = _deduplicate_bundle(bundle)
+        bundles.append(bundle)
 
     return bundles
 
@@ -214,17 +263,18 @@ def load_coir_dataset(config: DatasetConfig) -> List[DatasetBundle]:
             f"{len(qrels)} queries with relevance judgments for {lang}"
         )
 
-        bundles.append(
-            DatasetBundle(
-                queries=queries,
-                query_ids=query_ids,
-                documents=documents,
-                document_ids=document_ids,
-                qrels=qrels,
-                language=lang,
-                dataset_name=config.name,
-            )
+        bundle = DatasetBundle(
+            queries=queries,
+            query_ids=query_ids,
+            documents=documents,
+            document_ids=document_ids,
+            qrels=qrels,
+            language=lang,
+            dataset_name=config.name,
         )
+        if config.deduplicate_corpus:
+            bundle = _deduplicate_bundle(bundle)
+        bundles.append(bundle)
 
     return bundles
 

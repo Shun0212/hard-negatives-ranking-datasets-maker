@@ -39,6 +39,7 @@ datasets:
     query_field: ""
     documents_field: ""
     lang_as_config: false
+    deduplicate_corpus: true
     split: "train"
     corpus_config: "corpus"
     queries_config: "queries"
