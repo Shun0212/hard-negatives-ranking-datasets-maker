@@ -33,35 +33,13 @@ datasets:
     qrels_corpus_id_field: "corpus-id"
     qrels_score_field: "score"
 
-  # Apps: problem description → Python solution
-  - name: "CoIR-Retrieval/apps"
-    languages: ["python"]
-    dataset_type: "coir"
-    query_field: ""
-    documents_field: ""
-    lang_as_config: false
-    split: "train"
-    corpus_config: "corpus"
-    queries_config: "queries"
-    qrels_config: "default"
-    corpus_split: "corpus"
-    queries_split: "queries"
-    qrels_split: "train"
-    corpus_text_field: "text"
-    corpus_id_field: "_id"
-    queries_text_field: "text"
-    queries_id_field: "_id"
-    qrels_query_id_field: "query-id"
-    qrels_corpus_id_field: "corpus-id"
-    qrels_score_field: "score"
-
-  # StackOverflow QA: question → code answer
-  - name: "CoIR-Retrieval/stackoverflow-qa"
+  - name: "CoIR-Retrieval/codetrans-dl"
     languages: ["mixed"]
     dataset_type: "coir"
     query_field: ""
     documents_field: ""
     lang_as_config: false
+    deduplicate_corpus: true
     split: "train"
     corpus_config: "corpus"
     queries_config: "queries"
@@ -76,7 +54,6 @@ datasets:
     qrels_query_id_field: "query-id"
     qrels_corpus_id_field: "corpus-id"
     qrels_score_field: "score"
-
 
 
 embedding_models:
