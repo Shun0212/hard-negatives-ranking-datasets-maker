@@ -130,6 +130,7 @@ class SentenceTransformerEncoder(BaseEncoder):
 
         # Add vectors
         self.index.add(embeddings)
+        del embeddings
 
         # Optionally move to GPU
         if self.faiss_use_gpu and torch.cuda.is_available():
@@ -141,6 +142,10 @@ class SentenceTransformerEncoder(BaseEncoder):
                     "faiss-gpu is not installed; falling back to CPU index. "
                     "Install faiss-gpu for GPU-accelerated search."
                 )
+
+        # Free GPU cache after heavy document encoding
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         # Save index to disk
         index_path = os.path.join(self.index_dir, f"{index_name}.faiss")
@@ -193,6 +198,10 @@ class SentenceTransformerEncoder(BaseEncoder):
                 normalize_embeddings=(self.faiss_metric == "cosine"),
             )
             query_embeddings = query_embeddings.astype(np.float32)
+
+            # Free GPU cache between query batches to prevent OOM
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             # FAISS search
             scores, indices = self.index.search(query_embeddings, top_k)
