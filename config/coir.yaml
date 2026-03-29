@@ -106,6 +106,7 @@ datasets:
     query_field: ""
     documents_field: ""
     lang_as_config: false
+    deduplicate_corpus: true
     split: "train"
     corpus_config: "corpus"
     queries_config: "queries"
@@ -129,6 +130,7 @@ datasets:
     query_field: ""
     documents_field: ""
     lang_as_config: true
+    deduplicate_corpus: true
     lang_config_format: "{lang}-{config}"
     corpus_config: "corpus"
     queries_config: "queries"
@@ -174,6 +176,7 @@ datasets:
     query_field: ""
     documents_field: ""
     lang_as_config: false
+    deduplicate_corpus: true
     split: "train"
     corpus_config: "corpus"
     queries_config: "queries"
@@ -219,6 +222,7 @@ datasets:
     query_field: ""
     documents_field: ""
     lang_as_config: false
+    deduplicate_corpus: true
     split: "train"
     corpus_config: "corpus"
     queries_config: "queries"
