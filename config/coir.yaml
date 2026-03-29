@@ -249,6 +249,9 @@ mining_config:
   cache_dir: "./cache"
   device: ""  # auto-detect (cuda / cpu)
   faiss:
+    index_type: "hnsw"
+    hnsw_m: 32
+    ef_search: 128
     use_gpu: false
 
 upload_config:
