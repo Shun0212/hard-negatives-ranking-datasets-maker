@@ -249,7 +249,7 @@ mining_config:
   cache_dir: "./cache"
   device: ""  # auto-detect (cuda / cpu)
   faiss:
-    use_gpu: true
+    use_gpu: false
 
 upload_config:
   dataset: "Shuu12121/coir_hard_negative_datasets"
