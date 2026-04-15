@@ -79,6 +79,6 @@ mining_config:
 upload_config:
   dataset: "Shuu12121/owl_code_search_hard_negative_datasets_V2"
   max_per_language: 100000000
-  max_per_query: 200
+  max_per_query: 100
 
 strip_docstrings: true
