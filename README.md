@@ -95,7 +95,11 @@ datasets:
     documents_field: "code"
     lang_as_config: false
     dataset_type: "paired"
+
+strip_docstrings: true  # Python の code だけ、必要に応じて docstring を除去
 ```
+
+`strip_docstrings: true` を指定すると、`languages` が `python` のデータセットだけ `documents_field` のコードから module / class / function / method の docstring を除去する。Python 以外の言語、または構文解析に失敗したコードはそのまま使われる。
 
 ### CoIR データセット (`config/coir_example.yaml`)
 

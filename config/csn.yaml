@@ -6,6 +6,8 @@ datasets:
     lang_as_config: true
     dataset_type: "paired"
 
+strip_docstrings: true 
+
 embedding_models:
   - name: "Qwen/Qwen3-Embedding-0.6B"
     architecture: "sentence-transformers"

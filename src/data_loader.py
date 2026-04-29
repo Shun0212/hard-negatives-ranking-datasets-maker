@@ -235,6 +235,8 @@ def load_coir_dataset(config: DatasetConfig) -> List[DatasetBundle]:
             doc_text = f"{title} {text}".strip() if title else text
             if not doc_text:
                 continue
+            if config.strip_docstrings and lang == "python":
+                doc_text = _strip_python_docstrings(doc_text)
             documents.append(doc_text)
             document_ids.append(did)
 

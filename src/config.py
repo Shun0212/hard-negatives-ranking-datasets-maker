@@ -101,7 +101,16 @@ def load_config(path: str) -> ProjectConfig:
     with open(path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
-    datasets = [DatasetConfig(**d) for d in raw["datasets"]]
+    default_strip_docstrings = raw.get("strip_docstrings", False)
+    datasets = [
+        DatasetConfig(
+            **{
+                "strip_docstrings": default_strip_docstrings,
+                **d,
+            }
+        )
+        for d in raw["datasets"]
+    ]
     models = [EmbeddingModelConfig(**m) for m in raw["embedding_models"]]
 
     mining_raw = raw.get("mining_config", {})
